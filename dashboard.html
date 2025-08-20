@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>План на день</title>
+  <style>
+    .dashboard {
+      font-family: Arial, sans-serif;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    h2 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    thead { background: #f4f4f4; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    td[contenteditable="true"] { background: #fffbea; }
+    select { width: 100%; padding: 4px; border-radius: 4px; cursor: pointer; }
+    .priority option[value="urgent"] { background-color: #ffcccc; }
+    .priority option[value="wait"] { background-color: #fff3cd; }
+    .status option[value="planned"] { background-color: #d1ecf1; }
+    .status option[value="inprogress"] { background-color: #cce5ff; }
+    .status option[value="paused"] { background-color: #ffeeba; }
+    .status option[value="done"] { background-color: #d4edda; }
+    button#addRow {
+      padding: 8px 12px; background: #0079bf; color: white; border: none;
+      border-radius: 4px; cursor: pointer;
+    }
+    button#addRow:hover { background: #026aa7; }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h2>План на день</h2>
+    <table id="planTable">
+      <thead>
+        <tr>
+          <th>Задача</th>
+          <th>Описание</th>
+          <th>Приоритет</th>
+          <th>Результат</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td contenteditable="true">Звонок клиенту</td>
+          <td contenteditable="true">Обсудить детали договора</td>
+          <td>
+            <select class="priority">
+              <option value="">—</option>
+              <option value="urgent">Срочно</option>
+              <option value="wait">Ждёт</option>
+            </select>
+          </td>
+          <td>
+            <select class="status">
+              <option value="">—</option>
+              <option value="planned">В планах</option>
+              <option value="inprogress">В работе</option>
+              <option value="paused">На паузе</option>
+              <option value="done">Завершено</option>
+            </select>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <button id="addRow">+ Добавить задачу</button>
+  </div>
+
+  <script>
+    function applyColors(select) {
+      let color = select.options[select.selectedIndex].style.backgroundColor;
+      select.style.backgroundColor = color;
+    }
+
+    function saveTable() {
+      let rows = [];
+      document.querySelectorAll("#planTable tbody tr").forEach(tr => {
+        let task = tr.cells[0].innerText;
+        let desc = tr.cells[1].innerText;
+        let priority = tr.cells[2].querySelector("select").value;
+        let status = tr.cells[3].querySelector("select").value;
+        rows.push({ task, desc, priority, status });
+      });
+      localStorage.setItem("dayPlan", JSON.stringify(rows));
+    }
+
+    function loadTable() {
+      let saved = localStorage.getItem("dayPlan");
+      if (!saved) return;
+      let rows = JSON.parse(saved);
+      let tbody = document.querySelector("#planTable tbody");
+      tbody.innerHTML = "";
+      rows.forEach(r => {
+        let row = document.createElement("tr");
+        row.innerHTML = `
+          <td contenteditable="true">${r.task}</td>
+          <td contenteditable="true">${r.desc}</td>
+          <td>
+            <select class="priority">
+              <option value="">—</option>
+              <option value="urgent" ${r.priority==="urgent"?"selected":""}>Срочно</option>
+              <option value="wait" ${r.priority==="wait"?"selected":""}>Ждёт</option>
+            </select>
+          </td>
+          <td>
+            <select class="status">
+              <option value="">—</option>
+              <option value="planned" ${r.status==="planned"?"selected":""}>В планах</option>
+              <option value="inprogress" ${r.status==="inprogress"?"selected":""}>В работе</option>
+              <option value="paused" ${r.status==="paused"?"selected":""}>На паузе</option>
+              <option value="done" ${r.status==="done"?"selected":""}>Завершено</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      bindEvents();
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.priority, .status').forEach(select => {
+        applyColors(select);
+        select.addEventListener('change', function() {
+          applyColors(this);
+          saveTable();
+        });
+      });
+      document.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+        cell.addEventListener('input', saveTable);
+      });
+    }
+
+    document.getElementById('addRow').addEventListener('click', () => {
+      let table = document.querySelector('#planTable tbody');
+      let row = document.createElement('tr');
+      row.innerHTML = `
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td>
+          <select class="priority">
+            <option value="">—</option>
+            <option value="urgent">Срочно</option>
+            <option value="wait">Ждёт</option>
+          </select>
+        </td>
+        <td>
+          <select class="status">
+            <option value="">—</option>
+            <option value="planned">В планах</option>
+            <option value="inprogress">В работе</option>
+            <option value="paused">На паузе</option>
+            <option value="done">Завершено</option>
+          </select>
+        </td>
+      `;
+      table.appendChild(row);
+      bindEvents();
+      saveTable();
+    });
+
+    window.addEventListener("load", () => {
+      loadTable();
+      bindEvents();
+    });
+  </script>
+</body>
+</html>
